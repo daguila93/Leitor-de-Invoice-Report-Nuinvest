@@ -1,34 +1,36 @@
-from pathlib import Path
-import slate3k as slate
 import re
-import csv
+from pathlib import Path
 
-currentPath = Path.cwd()  # get the script`s current path
-
-
-def getAllPDFTables(currentPath):
-    linhas = []
-
-    for child in currentPath.iterdir():
-        if(child.is_file() and child.suffix == '.pdf'):
-
-            with open(child, 'rb') as temp:
-                regexData = re.compile("(\d{2}\/\d{2}\/\d{4})")
-                regexLinhasTabela = re.compile("BOVESPA\s(.*?)\sD")
-                texto = slate.PDF(temp).text()
-                data = regexData.findall(texto)
-                dataFinal = data[2]
-
-                for match in regexLinhasTabela.finditer(texto):
-                    row = f"{dataFinal};{match.group(1).replace(' ', ';')}"
-                    filtered_row = re.sub("(BOVESPA;)|(PN;)|(N[0-9];)|(CI;)|(#;)|(ON;)|(ER;)|(NM;)|(EX;)|(;D)\b", '', row)
-                    linhas.append(filtered_row)
-
-    return linhas
+import pandas as pd
+import slate3k as slate
 
 
-with open(currentPath.joinpath('ir.csv'), 'w', encoding='UTF8', newline='') as f:
-    writer = csv.DictWriter(f, delimiter=';', fieldnames=["Data", "Compra/Venda", "À Vista/Fracionado", "Nome Ativo", "Quantidade", "Preço/Ajuste", "Valor/Ajuste"])
-    writer.writeheader()
-    writer = csv.writer(f, delimiter="\n")
-    writer.writerow(getAllPDFTables(currentPath))
+def extract_data(file):
+    rows = list()
+
+    if file.is_file() and file.suffix == '.pdf':
+        with open(file, 'rb') as f:
+            document_text = slate.PDF(f).text()
+            date = date_regex.findall(document_text)[2]
+
+            for row in rows_regex.finditer(document_text):
+                matched_group = f'{date} {row.group(1)}'
+                replaced = re.sub('\s(PN|N[0-9]|CI|#|ON|ER|EJ|NM|EX)', '', matched_group)
+                splitted = replaced.split(' ')
+                rows.append(splitted)
+
+    return rows
+
+
+currentPath = Path('./files')
+date_regex = re.compile('\d{2}\/\d{2}\/\d{4}')
+rows_regex = re.compile('BOVESPA\s(.*?)\s[C,D]\s')
+data = list()
+
+for child in currentPath.iterdir():
+    data += extract_data(child)
+
+dt = pd.DataFrame(data, columns=['Data Pregão', 'C/V', 'Tipo de Mercado','Especificação do Título', 'Quantidade', 'Preço/Ajuste', 'Valor/Ajuste'])
+
+dt.to_csv('ir.csv', sep=';', encoding='utf-8', index=False)
+dt.to_excel('ir.xlsx', index=False)
