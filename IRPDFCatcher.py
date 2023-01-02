@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import slate3k as slate
 
-currentPath = Path(r'C:\desenv\Python\IR PDF Catcher\files') #Coloque o caminho dos arquivos pdfs dos invoices aqui
+currentPath = Path(r'C:\desenv\Python\IR PDF Catcher\files')
 
 
 def extract_data(file):
@@ -15,7 +15,6 @@ def extract_data(file):
             document_text = slate.PDF(f).text()
             date = date_regex.findall(document_text)[2]
             invoice = invoice_number.findall(document_text)[0]
-            # print(invoice)
 
             for row in rows_regex.finditer(document_text):
                 matched_group = f'{invoice} {date} {row.group(1)}'
