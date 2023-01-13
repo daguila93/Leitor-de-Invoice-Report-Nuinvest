@@ -1,10 +1,31 @@
+import os
 import re
 from pathlib import Path
-
 import pandas as pd
 import slate3k as slate
 
-currentPath = Path(r'C:\desenv\Python\IR PDF Catcher\files')
+regex = "nota (.{0,}) Data"
+
+pathname = os.curdir
+separador = os.path.sep
+allFiles = os.listdir(pathname)
+
+for file in allFiles:
+    fpath = pathname + separador + file
+    if (os.path.isfile(fpath) and file.endswith('.pdf')):
+        print(file)
+        with open(fpath, 'rb') as realFile:
+            df = slate.PDF(realFile)
+            invoiceNumber = re.findall(regex, str(df.text()))
+
+            if(len(invoiceNumber) != 0):
+                print(invoiceNumber)
+
+                realFile.close()
+
+                os.rename(fpath, pathname + separador + invoiceNumber[0] + ".pdf");
+
+currentPath = Path(os.curdir)
 
 
 def extract_data(file):
@@ -23,7 +44,6 @@ def extract_data(file):
                 rows.append(splitted)
 
     return rows
-
 
 
 date_regex = re.compile('\d{2}\/\d{2}\/\d{4}')
